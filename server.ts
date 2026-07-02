@@ -30,11 +30,7 @@ const app = express();
 app.use(express.json());
 
 app.get("/ping", (req, res) => {
-  // Keep the request open for 25 seconds to keep Cloud Run CPU allocated
-  // because Cloud Run throttles CPU when there are no active requests.
-  setTimeout(() => {
-    res.send("pong");
-  }, 25000);
+  res.send("pong");
 });
 
 const PORT = process.env.PORT || 3000;
@@ -261,9 +257,9 @@ app.post('/api/bot/start', upload.single('video'), async (req, res) => {
 
              if (chatEntity) {
                  // Get video dimensions using ffprobe
-                 let w = 640;
-                 let h = 360;
-                 let fps = 15;
+                 let w = 1280;
+                 let h = 720;
+                 let fps = 30;
                  try {
                      const { stdout } = await execPromise(`ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${finalVideoPath}"`);
                      let [vw, vh] = stdout.trim().split('x').map(Number);
@@ -277,18 +273,32 @@ app.post('/api/bot/start', upload.single('video'), async (req, res) => {
                      }
 
                      if (vw && vh) {
-                         if (vh > vw) {
-                             // Portrait
-                             w = 368;
-                             h = 640;
-                         } else {
+                         let MAX_DIM = 1280;
+                         if (vw > vh) {
                              // Landscape
-                             w = 640;
-                             h = 360;
+                             if (vw > MAX_DIM) {
+                                 w = MAX_DIM;
+                                 h = Math.floor(vh * (MAX_DIM / vw));
+                             } else {
+                                 w = vw;
+                                 h = vh;
+                             }
+                         } else {
+                             // Portrait
+                             if (vh > MAX_DIM) {
+                                 h = MAX_DIM;
+                                 w = Math.floor(vw * (MAX_DIM / vh));
+                             } else {
+                                 w = vw;
+                                 h = vh;
+                             }
                          }
+                         // Ensure dimensions are multiples of 2
+                         w = Math.floor(w / 2) * 2;
+                         h = Math.floor(h / 2) * 2;
                      }
                  } catch (e: any) {
-                     console.error("[ffprobe] failed to get video dimensions, falling back to 640x360", e.message);
+                     console.error("[ffprobe] failed to get video dimensions, falling back to 1280x720", e.message);
                  }
 
                  console.log(`[Bot] Configuring video stream with resolution ${w}x${h} at ${fps} FPS`);

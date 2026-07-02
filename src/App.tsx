@@ -37,21 +37,11 @@ export default function App() {
       }
     }
 
-    // Keep-alive long polling to prevent server CPU from sleeping
-    let isComponentMounted = true;
-    const keepAlive = async () => {
-      while (isComponentMounted) {
-        try {
-          await fetch('/ping');
-        } catch (e) {
-          // If error (e.g. network issue), wait 5 seconds before retrying
-          await new Promise(r => setTimeout(r, 5000));
-        }
-      }
-    };
-    keepAlive();
-
-    return () => { isComponentMounted = false; };
+    // Keep-alive to ensure network proxy/router stays active
+    const interval = setInterval(() => {
+      fetch('/ping').catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleLoginSuccess = (sessionString: string, apiId: string, apiHash: string) => {
