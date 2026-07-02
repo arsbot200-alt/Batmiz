@@ -30,7 +30,11 @@ const app = express();
 app.use(express.json());
 
 app.get("/ping", (req, res) => {
-  res.send("pong");
+  // Keep the request open for 25 seconds to keep Cloud Run CPU allocated
+  // because Cloud Run throttles CPU when there are no active requests.
+  setTimeout(() => {
+    res.send("pong");
+  }, 25000);
 });
 
 const PORT = process.env.PORT || 3000;
@@ -257,9 +261,9 @@ app.post('/api/bot/start', upload.single('video'), async (req, res) => {
 
              if (chatEntity) {
                  // Get video dimensions using ffprobe
-                 let w = 854;
-                 let h = 480;
-                 let fps = 24;
+                 let w = 640;
+                 let h = 360;
+                 let fps = 15;
                  try {
                      const { stdout } = await execPromise(`ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${finalVideoPath}"`);
                      let [vw, vh] = stdout.trim().split('x').map(Number);
@@ -275,16 +279,16 @@ app.post('/api/bot/start', upload.single('video'), async (req, res) => {
                      if (vw && vh) {
                          if (vh > vw) {
                              // Portrait
-                             w = 480;
-                             h = 854;
+                             w = 368;
+                             h = 640;
                          } else {
                              // Landscape
-                             w = 854;
-                             h = 480;
+                             w = 640;
+                             h = 360;
                          }
                      }
                  } catch (e: any) {
-                     console.error("[ffprobe] failed to get video dimensions, falling back to 854x480", e.message);
+                     console.error("[ffprobe] failed to get video dimensions, falling back to 640x360", e.message);
                  }
 
                  console.log(`[Bot] Configuring video stream with resolution ${w}x${h} at ${fps} FPS`);
