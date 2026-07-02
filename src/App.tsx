@@ -12,6 +12,21 @@ export default function App() {
     apiHash: localStorage.getItem('tg_api_hash') || '',
   });
 
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('app_authenticated') === 'true';
+  });
+  const [passwordInput, setPasswordInput] = useState('');
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === 'tasbeel') {
+      localStorage.setItem('app_authenticated', 'true');
+      setIsAuthenticated(true);
+    } else {
+      alert('Incorrect password');
+    }
+  };
+
   useEffect(() => {
     // Initialize Telegram Web App
     if (WebApp.initData) {
@@ -34,6 +49,45 @@ export default function App() {
     localStorage.removeItem('tg_session');
     setAppState({ ...appState, sessionString: null });
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-sm bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl"
+        >
+          <div className="flex justify-center mb-6">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-center mb-6 tracking-tight">Enter Password</h2>
+          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+            <div>
+              <input
+                type="password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder="Password"
+                className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                autoFocus
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-white text-slate-900 font-semibold py-3 rounded-xl hover:bg-slate-100 transition-colors shadow-lg shadow-white/10"
+            >
+              Unlock
+            </button>
+          </form>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans selection:bg-blue-500/30">

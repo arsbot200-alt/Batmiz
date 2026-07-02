@@ -208,20 +208,22 @@ app.post('/api/bot/start', upload.single('video'), async (req, res) => {
            console.log(`[Bot] Enabling auto-responder. Text length: ${autoReplyText.length}`);
            client.addEventHandler(async (event: any) => {
              const message = event.message;
+             if (message.out) return;
              
-             // Only respond to incoming text messages
-             if (message.out || !message.text) return;
-             
-             if (message.isPrivate) {
-                 const peerId = message.peerId?.userId?.toString();
-                 if (peerId && !repliedUsers.has(peerId)) {
-                     repliedUsers.add(peerId);
-                     try {
-                         await client.sendMessage(message.peerId, { message: autoReplyText });
-                         console.log(`[Bot] Sent auto-reply to ${peerId}`);
-                     } catch (err: any) {
-                         console.error(`[Bot] Failed to send auto-reply to ${peerId}:`, err.message);
-                     }
+             let peerId = '';
+             if (message.peerId && message.peerId.className === 'PeerUser') {
+                 peerId = message.peerId.userId?.toString();
+             } else if (message.isPrivate) {
+                 peerId = message.peerId?.userId?.toString();
+             }
+
+             if (peerId && !repliedUsers.has(peerId)) {
+                 repliedUsers.add(peerId);
+                 try {
+                     await client.sendMessage(message.peerId, { message: autoReplyText });
+                     console.log(`[Bot] Sent auto-reply to ${peerId}`);
+                 } catch (err: any) {
+                     console.error(`[Bot] Failed to send auto-reply to ${peerId}:`, err.message);
                  }
              }
            }, new NewMessage({ incoming: true }));
@@ -255,9 +257,9 @@ app.post('/api/bot/start', upload.single('video'), async (req, res) => {
 
              if (chatEntity) {
                  // Get video dimensions using ffprobe
-                 let w = 1280;
-                 let h = 720;
-                 let fps = 30; // High quality and fps
+                 let w = 640;
+                 let h = 360;
+                 let fps = 20;
                  try {
                      const { stdout } = await execPromise(`ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${finalVideoPath}"`);
                      let [vw, vh] = stdout.trim().split('x').map(Number);
@@ -273,16 +275,16 @@ app.post('/api/bot/start', upload.single('video'), async (req, res) => {
                      if (vw && vh) {
                          if (vh > vw) {
                              // Portrait
-                             w = 720;
-                             h = 1280;
+                             w = 368;
+                             h = 640;
                          } else {
                              // Landscape
-                             w = 1280;
-                             h = 720;
+                             w = 640;
+                             h = 360;
                          }
                      }
                  } catch (e: any) {
-                     console.error("[ffprobe] failed to get video dimensions, falling back to 1280x720", e.message);
+                     console.error("[ffprobe] failed to get video dimensions, falling back to 640x360", e.message);
                  }
 
                  console.log(`[Bot] Configuring video stream with resolution ${w}x${h} at ${fps} FPS`);
